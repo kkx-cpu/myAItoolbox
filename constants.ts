@@ -67,6 +67,7 @@ export const AI_TOOLS: AITool[] = [
     icon: "fa-check-double",
     category: "Academic",
     status: "Stable",
+    isHot: true,
     link: "https://kkxtc-refmatchpro.hf.space",
     title: {
       zh: "RefMatch Pro 参考文献检测",
@@ -101,6 +102,7 @@ export const AI_TOOLS: AITool[] = [
     icon: "fa-wave-square",
     category: "Education",
     status: "Stable",
+    isNew: true,
     link: "https://distribution-edu.netlify.app",
     title: {
       zh: "手势互动粒子分布动画",

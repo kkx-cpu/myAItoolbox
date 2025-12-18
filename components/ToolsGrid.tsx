@@ -32,6 +32,7 @@ const ToolsGrid: React.FC = () => {
       case 'Beta': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
       case 'New': return 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
       case 'Dev': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+      case 'Internal Only': return 'bg-rose-500/10 text-rose-400 border-rose-500/20';
       default: return 'bg-slate-500/10 text-slate-400 border-slate-500/20';
     }
   };
@@ -85,17 +86,26 @@ const ToolsGrid: React.FC = () => {
             {filteredTools.map((tool) => (
               <div 
                 key={tool.id} 
-                className="group glass p-6 md:p-8 rounded-[2rem] border border-slate-800/50 hover:border-cyan-500/30 transition-all duration-500 hover:-translate-y-2 relative overflow-hidden flex flex-col space-y-5"
+                className={`group glass p-6 md:p-8 rounded-[2rem] border transition-all duration-500 hover:-translate-y-2 relative overflow-hidden flex flex-col space-y-5 ${tool.isHot ? 'border-amber-500/30 hover:border-amber-500/50' : 'border-slate-800/50 hover:border-cyan-500/30'}`}
               >
+                {/* Visual Flair for Hot/New tools */}
+                {tool.isHot && <div className="absolute top-4 right-4 flex items-center space-x-1.5">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_#f59e0b]"></span>
+                  <span className="text-[9px] font-black text-amber-500 uppercase tracking-tighter">Trending</span>
+                </div>}
+                {tool.isNew && !tool.isHot && <div className="absolute top-4 right-4">
+                  <span className="text-[9px] font-black text-cyan-400 uppercase tracking-tighter bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">New Arrival</span>
+                </div>}
+
                 <div className="absolute -top-16 -right-16 w-48 h-48 bg-cyan-500/5 rounded-full blur-[60px] group-hover:bg-cyan-500/10 transition-colors"></div>
                 
                 <div className="flex justify-between items-start">
-                  <div className="w-14 h-14 bg-slate-800/80 backdrop-blur rounded-2xl border border-slate-700 flex items-center justify-center shrink-0 group-hover:bg-cyan-500 group-hover:border-cyan-400 transition-all duration-500 shadow-xl">
-                    <i className={`fas ${tool.icon} text-xl group-hover:text-white text-cyan-400 transition-colors`}></i>
+                  <div className={`w-14 h-14 bg-slate-800/80 backdrop-blur rounded-2xl border border-slate-700 flex items-center justify-center shrink-0 transition-all duration-500 shadow-xl ${tool.isHot ? 'group-hover:bg-amber-500 group-hover:border-amber-400' : 'group-hover:bg-cyan-500 group-hover:border-cyan-400'}`}>
+                    <i className={`fas ${tool.icon} text-xl group-hover:text-white transition-colors ${tool.isHot ? 'text-amber-400' : 'text-cyan-400'}`}></i>
                   </div>
                   
                   {tool.status && (
-                    <span className={`text-[8px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-tighter ${getStatusStyle(tool.status)}`}>
+                    <span className={`text-[8px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-tighter mt-1 ${getStatusStyle(tool.status)}`}>
                       {tool.status}
                     </span>
                   )}
@@ -119,7 +129,7 @@ const ToolsGrid: React.FC = () => {
                       href={tool.link} 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="group/btn relative w-full px-5 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-xs font-bold text-white transition-all hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] flex items-center justify-center"
+                      className={`group/btn relative w-full px-5 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center ${tool.isHot ? 'hover:bg-amber-500 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'hover:bg-cyan-500 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]'}`}
                     >
                       {t.visitTool} 
                       <i className="fas fa-arrow-right ml-3 text-[10px] transition-transform group-hover/btn:translate-x-1"></i>

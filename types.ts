@@ -21,7 +21,7 @@ export interface TranslationStrings {
   viewProfile: string;
 }
 
-export type ToolStatus = 'Stable' | 'Beta' | 'New' | 'Dev';
+export type ToolStatus = 'Stable' | 'Beta' | 'New' | 'Dev' | 'Internal Only';
 
 export interface AITool {
   id: string;
@@ -31,6 +31,8 @@ export interface AITool {
   link: string;
   category: string;
   status?: ToolStatus;
+  isHot?: boolean;
+  isNew?: boolean;
 }
 
 export interface NewsInsight {

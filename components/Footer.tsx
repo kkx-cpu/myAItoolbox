@@ -34,7 +34,7 @@ const Footer: React.FC = () => {
                   KAIXIANG<span className="text-cyan-500">.KANG</span>
                 </span>
                 <span className="text-[10px] uppercase tracking-[0.4em] text-slate-500 font-bold mt-2 block">
-                  {language === 'zh' ? '高等教育 AI 研究室' : 'AI for Higher Ed Lab'}
+                  {language === 'zh' ? 'AI 实用工具箱' : 'AI Toolkit'}
                 </span>
               </div>
             </div>

@@ -1,23 +1,58 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
-const API_KEY = process.env.API_KEY || "";
-
-export const getGeminiResponse = async (prompt: string, language: string) => {
-  if (!API_KEY) return "API Key not configured. (请配置 API Key)";
-  
+const withRetry = async <T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const response = await ai.models.generateContent({
+    return await fn();
+  } catch (error: any) {
+    if (retries > 0 && (error.status === 429 || error.status >= 500)) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+};
+
+/**
+ * 获取流式回复，提供更好的交互体验
+ */
+export async function* getGeminiStream(prompt: string, language: string) {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const responseStream = await ai.models.generateContentStream({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        systemInstruction: `You are an expert AI assistant for "Kaixiang's AI Toolkit" (康凯翔的 AI 实用工具箱), a collection of projects by researcher Kaixiang Kang. 
+        systemInstruction: `You are an expert AI assistant for "Kaixiang's AI Toolkit" (康凯翔的 AI 实用工具箱). 
         Current language: ${language}. Keep responses concise, helpful, and professional. 
         Focus on how these specific tools (RefMatch, Japanese News Summarizer, Particle Distribution, Oogiri AI) serve educational and creative purposes.`,
         temperature: 0.7,
       },
     });
+
+    for await (const chunk of responseStream) {
+      const c = chunk as GenerateContentResponse;
+      yield c.text || "";
+    }
+  } catch (error) {
+    console.error("Gemini Stream Error:", error);
+    yield "Error communicating with Gemini.";
+  }
+}
+
+export const getGeminiResponse = async (prompt: string, language: string) => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Fix: Explicitly specify GenerateContentResponse to avoid 'unknown' type error
+    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        systemInstruction: `You are an expert AI assistant for "Kaixiang's AI Toolkit". 
+        Current language: ${language}.`,
+        temperature: 0.7,
+      },
+    }));
     return response.text;
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -34,36 +69,26 @@ export interface NewsItem {
 }
 
 export const fetchLatestHENews = async (language: string): Promise<NewsItem[]> => {
-  if (!API_KEY) return [];
-  
   try {
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
-    // Requested information in a structured way to help parsing
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const prompt = `Find 3 most recent and relevant news headlines specifically for Higher Education Research or University Management from 'University World News'. 
-    For each news item, provide:
-    1. Title
-    2. A 2-sentence descriptive summary of the findings or the news content.
-    3. The direct URL.
+    Language: ${language}.`;
     
-    Language of the response: ${language}.`;
-    
-    const response = await ai.models.generateContent({
+    // Fix: Explicitly specify GenerateContentResponse to avoid 'unknown' type error
+    const response = await withRetry<GenerateContentResponse>(() => ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],
         temperature: 0.2,
       },
-    });
+    }));
 
+    // Fix: Successfully access candidates and text from GenerateContentResponse
     const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+    const searchUrls = groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
     const text = response.text || "";
     
-    // We attempt to pair the grounded URLs with the textual content.
-    // Since parsing unstructured text can be tricky, we'll try a regex approach or line split.
-    const searchUrls = groundingChunks?.map((c: any) => c.web?.uri).filter(Boolean) || [];
-    
-    // Better parsing strategy: Split by common bullet points or numbering
     const sections = text.split(/\d\.\s+|\n\s*[*#-]\s+/).filter(s => s.trim().length > 30);
     
     const items: NewsItem[] = [];
@@ -76,7 +101,7 @@ export const fetchLatestHENews = async (language: string): Promise<NewsItem[]> =
 
       items.push({
         title: title.length > 150 ? title.substring(0, 150) + '...' : title,
-        summary: summary || (language === 'zh' ? '点击查看更多高教研究详情。' : 'Click to read more details about this research.'),
+        summary: summary || (language === 'zh' ? '点击查看更多详情。' : 'Click to read more.'),
         url: searchUrls[i] || "#",
         sourceLabel: "University World News",
         date: new Date().toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })
